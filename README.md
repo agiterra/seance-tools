@@ -31,13 +31,13 @@ seance unregister <name>            Remove a personai from the registry
 
 ```sh
 # Run via bunx without cloning
-bunx github:agiterra/seance-tools seance register alex WrangleMeThis/Alex
+bunx github:agiterra/seance-tools seance register alex agiterra/Alex
 bunx github:agiterra/seance-tools seance borrow alex | jq .claudeMd
 bunx github:agiterra/seance-tools seance search "auth pattern" alex   # multi-vault hybrid
 
 # Or clone + run locally
 git clone https://github.com/agiterra/seance-tools && cd seance-tools && bun install
-bun run src/cli.ts register alex WrangleMeThis/Alex
+bun run src/cli.ts register alex agiterra/Alex
 ```
 
 The `seance search` command requires [`@agiterra/knowledge`](https://github.com/agiterra/knowledge-claude-code) installed (the wrapper shells out to its `vector-search.py`). The other commands work standalone.
@@ -59,7 +59,7 @@ import {
   listPersonae,
 } from "@agiterra/seance-tools";
 
-registerPersonai("alex", "WrangleMeThis/Alex");
+registerPersonai("alex", "agiterra/Alex");
 const payload = borrowPersonai("alex");
 // payload: { name, commit, claudeMd, sessionState, recentJournal, vaultDir }
 ```

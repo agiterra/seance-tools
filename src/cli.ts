@@ -23,7 +23,7 @@ Commands:
   help                        Show this message
 
 Examples:
-  seance register alex workshop162/Alex
+  seance register alex agiterra/Alex
   seance borrow alex
   seance search "auth pattern" alex mochi
 `;

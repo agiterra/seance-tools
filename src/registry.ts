@@ -12,7 +12,7 @@ const REGISTRY_VERSION = 1;
 
 export interface PersonaiEntry {
   name: string;
-  repo: string;          // e.g. "workshop162/Alex" or full https URL
+  repo: string;          // e.g. "agiterra/Alex" or full https URL
   commit?: string;       // last-pulled commit SHA
   pulledAt?: string;     // ISO timestamp of last successful pull
   registeredAt: string;  // ISO timestamp of original registration
