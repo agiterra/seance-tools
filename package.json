@@ -1,0 +1,23 @@
+{
+  "name": "@agiterra/seance-tools",
+  "version": "0.1.0",
+  "description": "Runtime-agnostic primitives for borrowing AI personae across Claude Code and Codex.",
+  "type": "module",
+  "bin": {
+    "seance": "./src/cli.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^25.8.0",
+    "typescript": "^5.5.0"
+  },
+  "files": [
+    "src/",
+    "README.md"
+  ],
+  "license": "MIT",
+  "author": "workshop162"
+}
