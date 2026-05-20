@@ -13,6 +13,6 @@ export {
   unregisterPersonai,
   loadRegistry,
 } from "./registry.ts";
-export { pullOrClone, resolveCommitSha } from "./git-ops.ts";
+export { pullOrClone, resolveCommitSha, safeSync } from "./git-ops.ts";
 export { multiVaultSearch, type VaultHit } from "./search.ts";
 export { borrowPersonai, type BorrowPayload } from "./borrow.ts";
