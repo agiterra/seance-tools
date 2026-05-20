@@ -21,9 +21,15 @@ function git(args: string[], cwd?: string): string {
   }).trim();
 }
 
-function normalizeRepo(repo: string): string {
-  // Accept "owner/repo", "https://github.com/owner/repo", "git@github.com:owner/repo"
-  if (repo.startsWith("https://") || repo.startsWith("git@")) return repo;
+export function normalizeRepo(repo: string): string {
+  // Accept "owner/repo", "https://github.com/owner/repo",
+  // "git@github.com:owner/repo", and "file:///abs/path" (the last is mainly for
+  // tests pointing at local bare repos, but also a legit air-gapped scheme).
+  if (
+    repo.startsWith("https://") ||
+    repo.startsWith("git@") ||
+    repo.startsWith("file://")
+  ) return repo;
   if (/^[\w.-]+\/[\w.-]+$/.test(repo)) return `https://github.com/${repo}.git`;
   throw new Error(`Invalid repo spec: ${repo}`);
 }
