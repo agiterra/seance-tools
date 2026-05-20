@@ -1,5 +1,21 @@
 # Knowledge Architecture Rollout Plan — v2
 
+> **⚠ STATUS: PARKED (2026-05-20)** — this document is preserved as a future reference, NOT a scheduled implementation. The 2026-05-20 holistic step-back review (`/tmp/kiln-holistic-step-back-opinion.md`) concluded that everything beyond PRs #1 and #2 in this repo (`safeSync` + `promote`/`demote`) is currently speculative architecture for problems not yet observed. The four-agent (Tim's Fondant, alex/fondant-overlay, canonical Fondant, Kiln) convergence on this multi-layer model is at best weak evidence — likely persona-style artifact across Fondant instances, not independent validation.
+>
+> **Authoritative operational stance** for cache + workspace behavior lives in [`docs/decisions/cache-workspace-safety.md`](../decisions/cache-workspace-safety.md). That decision doc is the minimum that prevents the observed incident and is the only knowledge-architecture-adjacent commitment this repo currently makes.
+>
+> **Re-engage this plan only on a concrete trigger:**
+> - A TankLoop persona is created and manual doctrine-copying from Fondant becomes painful.
+> - A second role besides Toolsmith materializes.
+> - A real PII leak occurs during a knowledge promotion.
+> - Multiple agents collide on runtime state in a way the existing primitives can't handle.
+> - Cross-base journal references actually break a real migration.
+> - The AMAT meta-repo exists and submodule knowledge placement blocks work.
+>
+> Until then: no implementation work on the contents below. Tim's RFC at [`agiterra/handbook/rfcs/2026-05-20-knowledge-bases.md`](https://github.com/agiterra/handbook/blob/main/rfcs/2026-05-20-knowledge-bases.md) is the corresponding parked proposal at the architecture level.
+>
+> ---
+
 > **v2 changelog (alex/fondant edit, 2026-05-20 13:23 EDT)** — based on Kiln's v1 (`/tmp/kiln-knowledge-architecture-plan.md`) + alex/fondant critique. Changes:
 >
 > 1. **Reordered**: frontmatter schema spec moved from Phase 4 into Phase 3 prep, so the content migration writes proper frontmatter as it goes instead of needing a retrofit pass. Phase 4 is now tooling-only.
