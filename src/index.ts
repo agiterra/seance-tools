@@ -12,7 +12,20 @@ export {
   listPersonae,
   unregisterPersonai,
   loadRegistry,
+  saveRegistry,
+  updatePersonaiState,
+  findPersonai,
+  type PersonaiEntry,
 } from "./registry.ts";
 export { pullOrClone, resolveCommitSha, safeSync } from "./git-ops.ts";
 export { multiVaultSearch, type VaultHit } from "./search.ts";
 export { borrowPersonai, type BorrowPayload } from "./borrow.ts";
+export {
+  promotePersonai,
+  demotePersonai,
+  type PromoteOptions,
+  type PromoteResult,
+  type DemoteOptions,
+  type DemoteResult,
+} from "./promote.ts";
+export { withLock } from "./lock.ts";

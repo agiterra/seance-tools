@@ -5,9 +5,11 @@
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { CACHE_ROOT, ensureCacheRoot } from "./cache.ts";
+import { cacheRoot, ensureCacheRoot } from "./cache.ts";
 
-const REGISTRY_PATH = join(CACHE_ROOT, "registry.json");
+function registryPath(): string {
+  return join(cacheRoot(), "registry.json");
+}
 const REGISTRY_VERSION = 1;
 
 export interface PersonaiEntry {
@@ -16,6 +18,14 @@ export interface PersonaiEntry {
   commit?: string;       // last-pulled commit SHA
   pulledAt?: string;     // ISO timestamp of last successful pull
   registeredAt: string;  // ISO timestamp of original registration
+
+  // Promotion: when set, the personai has a primary workspace at
+  // `promotedPath` distinct from the cache. The cache at cachePath(name)
+  // is still maintained as a fresh disposable mirror for borrows; the
+  // primary is where the operator actually does work.
+  promoted?: boolean;
+  promotedAt?: string;     // ISO timestamp of promotion
+  promotedPath?: string;   // absolute path of the primary workspace
 }
 
 interface Registry {
@@ -25,10 +35,10 @@ interface Registry {
 
 export function loadRegistry(): Registry {
   ensureCacheRoot();
-  if (!existsSync(REGISTRY_PATH)) {
+  if (!existsSync(registryPath())) {
     return { version: REGISTRY_VERSION, personae: [] };
   }
-  const raw = readFileSync(REGISTRY_PATH, "utf8");
+  const raw = readFileSync(registryPath(), "utf8");
   const parsed = JSON.parse(raw) as Registry;
   if (parsed.version !== REGISTRY_VERSION) {
     throw new Error(
@@ -38,8 +48,8 @@ export function loadRegistry(): Registry {
   return parsed;
 }
 
-function saveRegistry(reg: Registry): void {
-  writeFileSync(REGISTRY_PATH, JSON.stringify(reg, null, 2) + "\n");
+export function saveRegistry(reg: Registry): void {
+  writeFileSync(registryPath(), JSON.stringify(reg, null, 2) + "\n");
 }
 
 export function registerPersonai(name: string, repo: string): PersonaiEntry {
@@ -72,7 +82,7 @@ export function listPersonae(): PersonaiEntry[] {
 
 export function updatePersonaiState(
   name: string,
-  patch: Partial<Pick<PersonaiEntry, "commit" | "pulledAt">>,
+  patch: Partial<Omit<PersonaiEntry, "name" | "registeredAt">>,
 ): void {
   const reg = loadRegistry();
   const entry = reg.personae.find((p) => p.name === name);
