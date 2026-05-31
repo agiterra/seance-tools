@@ -252,12 +252,54 @@ export function demotePersonai(
       ensureCleanCache(name, primary);
     }
 
-    // Replace the cache with the primary.
+    // Replace the cache with the primary — NON-DESTRUCTIVELY. The old cache is a
+    // disposable mirror, but force-rmSync before the move is unsafe: if
+    // renameSync(primary → cache) then fails (EXDEV across volumes, a live FD, a
+    // permission error), the cache is already gone with no recovery point — and
+    // demote is moving the operator's REAL accumulated primary work, so a half-done
+    // demote with no marker is the worst case. So: drop a transaction marker (parity
+    // with promote), back the old cache up instead of deleting it, and only delete
+    // the backup once the move succeeds. On failure, restore the backup so the slot
+    // is never left empty and surface a full error (never swallow — Fondant value 4).
+    const marker = join(cacheRoot(), `.${name}.demote.in-progress`);
+    writeFileSync(
+      marker,
+      JSON.stringify(
+        { op: "demote", from: primary, to: cache, startedAt: new Date().toISOString(), pid: process.pid },
+        null,
+        2,
+      ) + "\n",
+    );
+
+    let backup: string | undefined;
     if (existsSync(cache)) {
-      rmSync(cache, { recursive: true, force: true });
+      backup = `${cache}.bak-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+      renameSync(cache, backup);
     }
     mkdirSync(dirname(cache), { recursive: true });
-    renameSync(primary, cache);
+
+    try {
+      renameSync(primary, cache);
+    } catch (e) {
+      // Move failed. Restore the old cache so the slot isn't left empty; the primary
+      // is untouched (renameSync is atomic per-inode — a failure leaves the source
+      // in place). Keep the marker for operator inspection.
+      if (backup && !existsSync(cache)) {
+        try { renameSync(backup, cache); } catch { /* leave backup for manual recovery */ }
+      }
+      throw new Error(
+        `demote: failed to move primary ${primary} → cache ${cache}: ${(e as Error).message}. ` +
+          (backup ? `Old cache restored from backup. ` : "") +
+          `Primary is untouched at ${primary}. Marker: ${marker}.`,
+      );
+    }
+
+    // Move succeeded: the primary is now the cache. Delete the backup of the old
+    // (disposable) cache and clear the marker — both best-effort.
+    if (backup) {
+      try { rmSync(backup, { recursive: true, force: true }); } catch { /* operator can clean up */ }
+    }
+    try { unlinkSync(marker); } catch { /* ignore */ }
 
     const reg = loadRegistry();
     const liveEntry = reg.personae.find((p) => p.name === name);
