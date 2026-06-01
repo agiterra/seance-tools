@@ -5,10 +5,10 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { execFileSync } from "node:child_process";
 import {
-  mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync,
+  mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync, chmodSync, readdirSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { registerPersonai, loadRegistry } from "../src/registry.ts";
 import { promotePersonai, demotePersonai } from "../src/promote.ts";
 import { pullOrClone } from "../src/git-ops.ts";
@@ -193,11 +193,50 @@ describe("demotePersonai", () => {
     const entry = loadRegistry().personae.find((p) => p.name === "alex");
     expect(entry?.promoted).toBeUndefined();
     expect(entry?.promotedPath).toBeUndefined();
+
+    // Non-destructive bookkeeping: a clean demote leaves no backup or marker behind.
+    const leftovers = readdirSync(sb.cacheRoot).filter(
+      (f) => f.includes(".bak-") || f.includes("demote.in-progress"),
+    );
+    expect(leftovers).toEqual([]);
   });
 
   it("refuses to demote when not promoted", () => {
     setupRegistered(sb, "alex");
     expect(() => demotePersonai("alex")).toThrow(/not promoted/);
+  });
+
+  it("restores the old cache from backup if the primary→cache move fails (non-destructive)", () => {
+    setupRegistered(sb, "alex");
+    const promoted = promotePersonai("alex");
+    // Push so safeSync's unpushed/dirty check on the primary passes during demote.
+    git(["push", "origin", "main"], promoted.promotedPath);
+
+    // Stamp the disposable cache so we can prove the OLD cache survived the failure.
+    writeFileSync(join(promoted.cachePath, "OLD_CACHE_MARKER"), "old-cache\n");
+
+    // Force renameSync(primary → cache) to fail deterministically by making the
+    // primary's PARENT read-only (no write ⇒ the source dir can't be moved out).
+    // safeSync/lsof run before the move and only need traverse+read, so they pass.
+    const primaryParent = dirname(promoted.promotedPath);
+    chmodSync(primaryParent, 0o500);
+    try {
+      expect(() => demotePersonai("alex")).toThrow(/failed to move primary/);
+    } finally {
+      chmodSync(primaryParent, 0o700);
+    }
+
+    // 1. The old cache is back in place with its content intact (restored from backup).
+    expect(existsSync(promoted.cachePath)).toBe(true);
+    expect(existsSync(join(promoted.cachePath, "OLD_CACHE_MARKER"))).toBe(true);
+    // 2. The primary is untouched — no data lost.
+    expect(existsSync(promoted.promotedPath)).toBe(true);
+    // 3. No orphaned .bak-* backup left lying around (restore moved it back).
+    const baks = readdirSync(sb.cacheRoot).filter((f) => f.includes(".bak-"));
+    expect(baks).toEqual([]);
+    // 4. Registry still reflects promoted (the failed demote didn't half-update it).
+    const entry = loadRegistry().personae.find((p) => p.name === "alex");
+    expect(entry?.promoted).toBe(true);
   });
 });
 
